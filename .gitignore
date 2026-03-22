@@ -1,0 +1,19 @@
+# Python (Archivos compilados que vimos en tu captura)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entornos virtuales (Si usas venv, env, etc.)
+venv/
+env/
+.env
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# IDEs
+.vscode/
+.idea/
