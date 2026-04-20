@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from decimal import Decimal
 
 from django.contrib.auth.models import Group, User
@@ -5,6 +6,12 @@ from rest_framework import serializers
 
 from .models import Cliente, CuentaBancaria, Movimiento, Transferencia
 from .permissions import es_administrador_bancario
+=======
+from django.contrib.auth.models import Group, User
+from rest_framework import serializers
+
+from .models import Cliente, CuentaBancaria
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
 
 
 class ClienteListaSerializer(serializers.ModelSerializer):
@@ -129,6 +136,7 @@ class CuentaResumenSerializer(serializers.ModelSerializer):
             'cliente_nombre',
             'cliente_identificacion',
         )
+<<<<<<< HEAD
 
 
 class OperacionMontoSerializer(serializers.Serializer):
@@ -194,3 +202,5 @@ class TransferenciaCrearSerializer(serializers.Serializer):
                     {'cuenta_origen': 'Solo puede transferir desde sus propias cuentas.'}
                 )
         return attrs
+=======
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531

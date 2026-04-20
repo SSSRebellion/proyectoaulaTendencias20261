@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.db.models import Q
 
 from rest_framework import mixins, status, viewsets
@@ -7,6 +8,14 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import Cliente, CuentaBancaria, Transferencia
+=======
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+
+from .models import Cliente, CuentaBancaria
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
 from .permissions import EsAdministradorBancario, es_administrador_bancario
 from .serializers import (
     ClienteAdminSerializer,
@@ -14,12 +23,16 @@ from .serializers import (
     ClienteListaSerializer,
     CuentaBancariaSerializer,
     CuentaResumenSerializer,
+<<<<<<< HEAD
     MovimientoSerializer,
     OperacionMontoSerializer,
     TransferenciaCrearSerializer,
     TransferenciaSerializer,
 )
 from .services import ejecutar_deposito, ejecutar_retiro, ejecutar_transferencia
+=======
+)
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
 
 
 class ClienteViewSet(viewsets.ModelViewSet):
@@ -70,6 +83,7 @@ class CuentaBancariaViewSet(viewsets.ModelViewSet):
     serializer_class = CuentaBancariaSerializer
 
     def get_permissions(self):
+<<<<<<< HEAD
         if self.action in (
             'list',
             'retrieve',
@@ -78,6 +92,9 @@ class CuentaBancariaViewSet(viewsets.ModelViewSet):
             'retiro',
             'movimientos',
         ):
+=======
+        if self.action in ('list', 'retrieve', 'resumen'):
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
             from .permissions import EsAdministradorOClienteAutenticado
 
             return [EsAdministradorOClienteAutenticado()]
@@ -110,6 +127,7 @@ class CuentaBancariaViewSet(viewsets.ModelViewSet):
         cuenta = self.get_object()
         serializer = CuentaResumenSerializer(cuenta)
         return Response(serializer.data)
+<<<<<<< HEAD
 
     @action(detail=True, methods=['post'], url_path='deposito')
     def deposito(self, request, pk=None):
@@ -184,3 +202,5 @@ class TransferenciaViewSet(mixins.CreateModelMixin, ReadOnlyModelViewSet):
             TransferenciaSerializer(tr).data,
             status=status.HTTP_201_CREATED,
         )
+=======
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531

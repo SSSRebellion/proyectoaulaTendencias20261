@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-sr)m4sn4hxc0(xjq44@qv!4geg=ei!$xwsyl7nxve)@b%ql^kw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+<<<<<<< HEAD
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # CORS: frontend (p. ej. Vite en :5173) o despliegues que apunten al backend
@@ -34,6 +35,9 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
 ]
 CORS_ALLOW_CREDENTIALS = True
+=======
+ALLOWED_HOSTS = []
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
 
 
 # Application definition
@@ -45,7 +49,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+<<<<<<< HEAD
     'corsheaders',
+=======
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
     'rest_framework',
     'rest_framework_simplejwt',
     'banking',
@@ -54,7 +61,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+<<<<<<< HEAD
     'corsheaders.middleware.CorsMiddleware',
+=======
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

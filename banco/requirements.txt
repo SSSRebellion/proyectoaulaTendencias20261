@@ -1,4 +1,7 @@
 Django>=5.0,<7
 djangorestframework>=3.15
 djangorestframework-simplejwt>=5.3
+<<<<<<< HEAD
 django-cors-headers>=4.3
+=======
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531

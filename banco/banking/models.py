@@ -85,6 +85,7 @@ class CuentaBancaria(models.Model):
         if not self.numero_cuenta:
             self.numero_cuenta = self._generar_numero_cuenta()
         super().save(*args, **kwargs)
+<<<<<<< HEAD
 
 
 class Transferencia(models.Model):
@@ -146,3 +147,5 @@ class Movimiento(models.Model):
 
     def __str__(self):
         return f'{self.get_tipo_display()} {self.monto} → saldo {self.saldo_resultante}'
+=======
+>>>>>>> 03e623ade403996219ded2a3524448cf8d03d531
