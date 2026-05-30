@@ -119,14 +119,33 @@ export const apiDelete = (endpoint) =>
 
 // ─── Auth endpoints ──────────────────────────────────
 
-export async function login(username, password) {
-  const res = await fetch(`${API_BASE}/api/auth/token/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
+async function parseJsonResponse(res) {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { detail: text.slice(0, 200) };
+  }
+}
 
-  const data = await res.json();
+export async function login(username, password) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/auth/token/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+  } catch {
+    const error = new Error(
+      'No se pudo conectar con el servidor. Verifique VITE_API_URL en Vercel y que Render esté activo.',
+    );
+    error.network = true;
+    throw error;
+  }
+
+  const data = await parseJsonResponse(res);
   if (!res.ok) {
     const error = new Error('Credenciales inválidas');
     error.data = data;
@@ -138,13 +157,22 @@ export async function login(username, password) {
 }
 
 export async function registro(formData) {
-  const res = await fetch(`${API_BASE}/api/auth/registro/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData),
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/auth/registro/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+  } catch {
+    const error = new Error(
+      'No se pudo conectar con el servidor. Verifique VITE_API_URL en Vercel y que Render esté activo.',
+    );
+    error.network = true;
+    throw error;
+  }
 
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) {
     const error = new Error('Error en el registro');
     error.data = data;

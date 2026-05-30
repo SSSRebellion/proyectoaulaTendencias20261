@@ -144,21 +144,37 @@ SIMPLE_JWT = {
 }
 
 # CORS — frontend local (Vite) y producción (Vercel)
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip().rstrip('/')
-    for origin in os.environ.get(
+
+def _http_origins(raw_value, *defaults):
+    origins = []
+    for origin in raw_value.split(','):
+        origin = origin.strip().rstrip('/')
+        if origin.startswith(('http://', 'https://')):
+            origins.append(origin)
+    for origin in defaults:
+        origin = origin.strip().rstrip('/')
+        if origin.startswith(('http://', 'https://')) and origin not in origins:
+            origins.append(origin)
+    return origins
+
+
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173').strip().rstrip('/')
+
+CORS_ALLOWED_ORIGINS = _http_origins(
+    os.environ.get(
         'CORS_ALLOWED_ORIGINS',
         f'http://localhost:5173,http://127.0.0.1:5173,{FRONTEND_URL}',
-    ).split(',')
-    if origin.strip()
-]
+    ),
+)
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip().rstrip('/')
-    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', FRONTEND_URL).split(',')
-    if origin.strip()
+CSRF_TRUSTED_ORIGINS = _http_origins(
+    os.environ.get('CSRF_TRUSTED_ORIGINS', FRONTEND_URL),
+)
+
+# Permite cualquier subdominio *.vercel.app (producción y previews)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://[\w-]+\.vercel\.app$',
 ]
 
 if not DEBUG:

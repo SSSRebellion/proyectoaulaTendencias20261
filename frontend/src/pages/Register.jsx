@@ -48,9 +48,9 @@ export default function Register() {
           }
         });
         setFieldErrors(errors);
-        if (general) setError(general);
+        setError(general || 'Revise los campos marcados e intente nuevamente.');
       } else {
-        setError('Error al registrarse. Intente nuevamente.');
+        setError(err.message || 'Error al registrarse. Intente nuevamente.');
       }
     } finally {
       setLoading(false);
