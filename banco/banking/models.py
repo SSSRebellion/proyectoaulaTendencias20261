@@ -183,7 +183,7 @@ class Transferencia(models.Model):
         default=EstadoTransferencia.EXITOSA,
         help_text='Estado final de la transferencia.',
     )
-    # Referencias a los movimientos generados en cada cuenta
+    
     movimiento_origen = models.OneToOneField(
         Deposito,
         on_delete=models.PROTECT,
