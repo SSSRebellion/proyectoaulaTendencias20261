@@ -10,6 +10,9 @@ import Deposits from './pages/Deposits';
 import Transfers from './pages/Transfers';
 import Clients from './pages/Clients';
 import AdminAccounts from './pages/AdminAccounts';
+import Statement from './pages/Statement';
+import Products from './pages/Products';
+import AdminProducts from './pages/AdminProducts';
 
 export default function App() {
   return (
@@ -28,10 +31,13 @@ export default function App() {
               <Route path="/cuentas" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
               <Route path="/depositos" element={<ProtectedRoute><Deposits /></ProtectedRoute>} />
               <Route path="/transferencias" element={<ProtectedRoute><Transfers /></ProtectedRoute>} />
+              <Route path="/extracto" element={<ProtectedRoute><Statement /></ProtectedRoute>} />
+              <Route path="/productos" element={<ProtectedRoute><Products /></ProtectedRoute>} />
 
               {/* Protegidas — solo administrador */}
               <Route path="/admin/clientes" element={<ProtectedRoute requireAdmin><Clients /></ProtectedRoute>} />
               <Route path="/admin/cuentas" element={<ProtectedRoute requireAdmin><AdminAccounts /></ProtectedRoute>} />
+              <Route path="/admin/productos" element={<ProtectedRoute requireAdmin><AdminProducts /></ProtectedRoute>} />
 
               {/* Redirect por defecto */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

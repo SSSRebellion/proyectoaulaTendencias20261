@@ -18,7 +18,7 @@ export default function Transfers() {
         apiGet('/api/cuentas/'),
       ]);
       setTransferencias((tData.results || tData) ?? []);
-      setCuentas((cData.results || cData) ?? []);
+      setCuentas(((cData.results || cData) ?? []).filter((c) => c.estado === 'activa'));
     } catch (err) {
       console.error(err);
     } finally {

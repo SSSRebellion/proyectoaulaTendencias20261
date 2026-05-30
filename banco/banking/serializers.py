@@ -4,7 +4,8 @@ from django.contrib.auth.models import Group, User
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Cliente, CuentaBancaria, Deposito, Transferencia
+from .models import Cliente, CuentaBancaria, Deposito, ProductoFinanciero, Transferencia
+from .validators import validar_cuenta_operable
 
 
 class ClienteListaSerializer(serializers.ModelSerializer):
@@ -191,10 +192,7 @@ class DepositoSerializer(serializers.ModelSerializer):
         monto = attrs['monto']
         tipo = attrs.get('tipo_operacion', Deposito.TipoOperacion.DEPOSITO)
 
-        if cuenta.estado != CuentaBancaria.Estado.ACTIVA:
-            raise serializers.ValidationError(
-                {'cuenta': 'La cuenta no está activa.'}
-            )
+        validar_cuenta_operable(cuenta)
 
         if tipo == Deposito.TipoOperacion.RETIRO and cuenta.saldo < monto:
             raise serializers.ValidationError(
@@ -296,15 +294,9 @@ class TransferenciaSerializer(serializers.Serializer):
                 {'cuenta_destino': 'La cuenta destino debe ser diferente a la cuenta origen.'}
             )
 
-        # Ambas cuentas deben estar activas
-        if origen.estado != CuentaBancaria.Estado.ACTIVA:
-            raise serializers.ValidationError(
-                {'cuenta_origen': 'La cuenta origen no está activa.'}
-            )
-        if destino.estado != CuentaBancaria.Estado.ACTIVA:
-            raise serializers.ValidationError(
-                {'cuenta_destino': 'La cuenta destino no está activa.'}
-            )
+        # Ambas cuentas deben permitir operaciones
+        validar_cuenta_operable(origen, 'cuenta_origen')
+        validar_cuenta_operable(destino, 'cuenta_destino')
 
         # Validación preliminar de saldo (se re-valida dentro de la transacción atómica)
         if origen.saldo < monto:
@@ -427,3 +419,82 @@ class TransferenciaListaSerializer(serializers.ModelSerializer):
             'movimiento_destino',
         )
         read_only_fields = fields
+
+
+class ExtractoQuerySerializer(serializers.Serializer):
+    fecha_desde = serializers.DateField()
+    fecha_hasta = serializers.DateField()
+
+    def validate(self, attrs):
+        if attrs['fecha_desde'] > attrs['fecha_hasta']:
+            raise serializers.ValidationError(
+                {'fecha_hasta': 'Debe ser posterior o igual a fecha_desde.'}
+            )
+        return attrs
+
+
+class ExtractoTransaccionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    fecha = serializers.DateTimeField()
+    tipo_operacion = serializers.CharField()
+    tipo_operacion_display = serializers.CharField()
+    monto = serializers.DecimalField(max_digits=14, decimal_places=2)
+    descripcion = serializers.CharField()
+    saldo_resultante = serializers.DecimalField(max_digits=14, decimal_places=2)
+
+
+class ExtractoSerializer(serializers.Serializer):
+    cuenta_id = serializers.IntegerField()
+    numero_cuenta = serializers.CharField()
+    tipo_cuenta = serializers.CharField()
+    fecha_desde = serializers.DateField()
+    fecha_hasta = serializers.DateField()
+    saldo_inicial = serializers.DecimalField(max_digits=14, decimal_places=2)
+    saldo_final = serializers.DecimalField(max_digits=14, decimal_places=2)
+    transacciones = ExtractoTransaccionSerializer(many=True)
+
+
+class CambiarEstadoCuentaSerializer(serializers.Serializer):
+    estado = serializers.ChoiceField(choices=CuentaBancaria.Estado.choices)
+
+
+class ProductoFinancieroSerializer(serializers.ModelSerializer):
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    cupo_disponible = serializers.SerializerMethodField()
+    cliente_nombre = serializers.CharField(source='cliente.nombre_completo', read_only=True)
+
+    class Meta:
+        model = ProductoFinanciero
+        fields = (
+            'id',
+            'cliente',
+            'cliente_nombre',
+            'tipo',
+            'tipo_display',
+            'nombre',
+            'cupo',
+            'saldo_utilizado',
+            'cupo_disponible',
+            'estado',
+            'estado_display',
+            'fecha_vencimiento',
+            'creado_en',
+            'actualizado_en',
+        )
+        read_only_fields = ('id', 'creado_en', 'actualizado_en')
+
+    def get_cupo_disponible(self, obj):
+        return obj.cupo_disponible
+
+    def validate(self, attrs):
+        cupo = attrs.get('cupo', getattr(self.instance, 'cupo', None))
+        saldo = attrs.get(
+            'saldo_utilizado',
+            getattr(self.instance, 'saldo_utilizado', 0),
+        )
+        if cupo is not None and saldo is not None and saldo > cupo:
+            raise serializers.ValidationError(
+                {'saldo_utilizado': 'No puede superar el cupo del producto.'}
+            )
+        return attrs

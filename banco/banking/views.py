@@ -25,15 +25,14 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
-from .models import Cliente, CuentaBancaria, Deposito, Transferencia
+from .models import Cliente, CuentaBancaria, Deposito, ProductoFinanciero, Transferencia
 from .permissions import (
     EsAdminODueñoDeCuenta,
-    EsAdminParaEscrituraClienteParaLectura,
     EsAdministradorBancario,
-    EsAdministradorOClienteAutenticado,
     es_administrador_bancario,
 )
 from .serializers import (
+    CambiarEstadoCuentaSerializer,
     ClienteAdminSerializer,
     ClienteAutoedicionSerializer,
     ClienteListaSerializer,
@@ -41,9 +40,13 @@ from .serializers import (
     CuentaResumenSerializer,
     DepositoListaSerializer,
     DepositoSerializer,
+    ExtractoQuerySerializer,
+    ExtractoSerializer,
+    ProductoFinancieroSerializer,
     TransferenciaListaSerializer,
     TransferenciaSerializer,
 )
+from .services import obtener_extracto
 
 
 # ─────────────────────────────────────────────
@@ -100,10 +103,10 @@ class CuentaBancariaViewSet(viewsets.ModelViewSet):
     queryset = CuentaBancaria.objects.select_related('cliente')
 
     def get_permissions(self):
-        if self.action in ('list', 'retrieve', 'resumen', 'create'):
-            # Admin y clientes autenticados pueden listar, ver y crear
+        if self.action in ('list', 'retrieve', 'resumen', 'extracto', 'create'):
             return [EsAdminODueñoDeCuenta()]
-        # update, partial_update, destroy → solo admin
+        if self.action == 'cambiar_estado':
+            return [EsAdministradorBancario()]
         return [EsAdministradorBancario()]
 
     def get_serializer_class(self):
@@ -125,9 +128,32 @@ class CuentaBancariaViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='resumen')
     def resumen(self, request, pk=None):
         """Saldo e información básica de la cuenta (y cliente asociado)."""
-        cuenta = self.get_object()  # has_object_permission se ejecuta aquí
+        cuenta = self.get_object()
         serializer = CuentaResumenSerializer(cuenta)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='extracto')
+    def extracto(self, request, pk=None):
+        """Extracto bancario en un rango de fechas."""
+        cuenta = self.get_object()
+        query = ExtractoQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        data = obtener_extracto(
+            cuenta,
+            query.validated_data['fecha_desde'],
+            query.validated_data['fecha_hasta'],
+        )
+        return Response(ExtractoSerializer(data).data)
+
+    @action(detail=True, methods=['patch'], url_path='cambiar-estado')
+    def cambiar_estado(self, request, pk=None):
+        """Bloqueo/desbloqueo de cuenta (solo administrador)."""
+        cuenta = self.get_object()
+        serializer = CambiarEstadoCuentaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cuenta.estado = serializer.validated_data['estado']
+        cuenta.save(update_fields=['estado', 'actualizado_en'])
+        return Response(CuentaBancariaSerializer(cuenta).data)
 
 
 # ─────────────────────────────────────────────
@@ -243,3 +269,24 @@ class TransferenciaViewSet(viewsets.ModelViewSet):
         # Responder con el serializer de lista para mostrar toda la información
         response_serializer = TransferenciaListaSerializer(transferencia)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProductoFinancieroViewSet(viewsets.ModelViewSet):
+    """
+    Admin: CRUD de tarjetas de crédito y préstamos.
+    Cliente: consulta de sus propios productos.
+    """
+
+    queryset = ProductoFinanciero.objects.select_related('cliente')
+    serializer_class = ProductoFinancieroSerializer
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [EsAdminODueñoDeCuenta()]
+        return [EsAdministradorBancario()]
+
+    def get_queryset(self):
+        qs = ProductoFinanciero.objects.select_related('cliente')
+        if es_administrador_bancario(self.request.user):
+            return qs
+        return qs.filter(cliente__user=self.request.user)

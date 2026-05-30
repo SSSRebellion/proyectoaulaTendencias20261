@@ -224,3 +224,64 @@ class Transferencia(models.Model):
             f'{self.cuenta_origen.numero_cuenta} → {self.cuenta_destino.numero_cuenta} | '
             f'{self.get_estado_display()}'
         )
+
+
+class ProductoFinanciero(models.Model):
+    """Tarjetas de crédito o préstamos asociados a un cliente."""
+
+    class TipoProducto(models.TextChoices):
+        TARJETA_CREDITO = 'tarjeta_credito', 'Tarjeta de crédito'
+        PRESTAMO = 'prestamo', 'Préstamo'
+
+    class EstadoProducto(models.TextChoices):
+        ACTIVO = 'activo', 'Activo'
+        INACTIVO = 'inactivo', 'Inactivo'
+        VENCIDO = 'vencido', 'Vencido'
+        BLOQUEADO = 'bloqueado', 'Bloqueado'
+
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.PROTECT,
+        related_name='productos_financieros',
+    )
+    tipo = models.CharField(max_length=20, choices=TipoProducto.choices)
+    nombre = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+        help_text='Nombre o referencia del producto (ej. Visa Oro).',
+    )
+    cupo = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text='Límite de crédito o monto del préstamo.',
+    )
+    saldo_utilizado = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Monto utilizado del cupo.',
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoProducto.choices,
+        default=EstadoProducto.ACTIVO,
+    )
+    fecha_vencimiento = models.DateField()
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-creado_en']
+        verbose_name = 'Producto financiero'
+        verbose_name_plural = 'Productos financieros'
+
+    def __str__(self):
+        etiqueta = self.nombre or self.get_tipo_display()
+        return f'{etiqueta} — {self.cliente.nombre_completo}'
+
+    @property
+    def cupo_disponible(self):
+        return self.cupo - self.saldo_utilizado

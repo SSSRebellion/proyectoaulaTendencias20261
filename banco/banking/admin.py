@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CuentaBancaria, Deposito, Transferencia
+from .models import CuentaBancaria, Deposito, ProductoFinanciero, Transferencia
 
 
 @admin.register(CuentaBancaria)
@@ -52,3 +52,19 @@ class TransferenciaAdmin(admin.ModelAdmin):
         'fecha',
     )
     ordering = ('-fecha',)
+
+
+@admin.register(ProductoFinanciero)
+class ProductoFinancieroAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'cliente',
+        'tipo',
+        'nombre',
+        'cupo',
+        'saldo_utilizado',
+        'estado',
+        'fecha_vencimiento',
+    )
+    list_filter = ('tipo', 'estado')
+    search_fields = ('cliente__nombre_completo', 'cliente__numero_identificacion', 'nombre')

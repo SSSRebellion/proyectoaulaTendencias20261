@@ -18,7 +18,7 @@ export default function Deposits() {
         apiGet('/api/cuentas/'),
       ]);
       setDepositos((dData.results || dData) ?? []);
-      setCuentas((cData.results || cData) ?? []);
+      setCuentas(((cData.results || cData) ?? []).filter((c) => c.estado === 'activa'));
     } catch (err) {
       console.error(err);
     } finally {

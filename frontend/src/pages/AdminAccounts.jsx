@@ -63,6 +63,18 @@ export default function AdminAccounts() {
     }
   };
 
+  const cambiarEstado = async (cuenta, nuevoEstado) => {
+    const etiquetas = { activa: 'activar', bloqueada: 'bloquear', inactiva: 'desactivar' };
+    if (!window.confirm(`¿Confirma ${etiquetas[nuevoEstado] || 'cambiar'} la cuenta ${cuenta.numero_cuenta}?`)) return;
+    try {
+      await apiPatch(`/api/cuentas/${cuenta.id}/cambiar-estado/`, { estado: nuevoEstado });
+      setLoading(true);
+      await loadData();
+    } catch (err) {
+      alert(err.data?.estado?.[0] || err.data?.detail || 'Error al cambiar el estado.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -150,6 +162,21 @@ export default function AdminAccounts() {
                         <td>{new Date(c.fecha_apertura).toLocaleDateString('es-CO')}</td>
                         <td>
                           <div className="action-buttons">
+                            {c.estado !== 'activa' && (
+                              <button className="btn btn-success btn-sm" onClick={() => cambiarEstado(c, 'activa')} title="Activar">
+                                Activar
+                              </button>
+                            )}
+                            {c.estado !== 'bloqueada' && (
+                              <button className="btn btn-warning btn-sm" onClick={() => cambiarEstado(c, 'bloqueada')} title="Bloquear">
+                                Bloquear
+                              </button>
+                            )}
+                            {c.estado !== 'inactiva' && (
+                              <button className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(c, 'inactiva')} title="Inactivar">
+                                Inactivar
+                              </button>
+                            )}
                             <button className="btn btn-ghost btn-sm" onClick={() => openEdit(c)} title="Editar">
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
