@@ -87,22 +87,20 @@ class EsAdminODueñoDeCuenta(BasePermission):
 
         user_id = request.user.id
 
-        # Cliente → verificar que el objeto le pertenece
-        # Soporta: Cliente, CuentaBancaria, Deposito, Transferencia
         if hasattr(obj, 'user_id'):
-            # obj es Cliente
+            
             return obj.user_id == user_id
 
         if hasattr(obj, 'cliente'):
-            # obj es CuentaBancaria
+            
             return obj.cliente.user_id == user_id
 
         if hasattr(obj, 'cuenta'):
-            # obj es Deposito
+            
             return obj.cuenta.cliente.user_id == user_id
 
         if hasattr(obj, 'cuenta_origen'):
-            # obj es Transferencia — el cliente puede verla si es origen o destino
+           
             return (
                 obj.cuenta_origen.cliente.user_id == user_id
                 or obj.cuenta_destino.cliente.user_id == user_id
@@ -112,13 +110,6 @@ class EsAdminODueñoDeCuenta(BasePermission):
 
 
 class EsAdminParaEscrituraClienteParaLectura(BasePermission):
-    """
-    Administrador: CRUD completo.
-    Cliente autenticado: solo lectura (list, retrieve) de sus propios recursos.
-
-    Uso: Cuentas bancarias — el cliente puede ver sus cuentas pero no
-    crearlas, editarlas ni eliminarlas.
-    """
 
     message = 'Solo el administrador puede modificar este recurso.'
 
@@ -128,7 +119,7 @@ class EsAdminParaEscrituraClienteParaLectura(BasePermission):
             return False
         if es_administrador_bancario(u):
             return True
-        # Clientes solo pueden leer
+        
         if view.action in ('list', 'retrieve'):
             return Cliente.objects.filter(user=u).exists()
         return False

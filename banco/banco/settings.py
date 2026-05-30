@@ -172,7 +172,6 @@ CSRF_TRUSTED_ORIGINS = _http_origins(
     os.environ.get('CSRF_TRUSTED_ORIGINS', FRONTEND_URL),
 )
 
-# Permite cualquier subdominio *.vercel.app (producción y previews)
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://[\w-]+\.vercel\.app$',
 ]

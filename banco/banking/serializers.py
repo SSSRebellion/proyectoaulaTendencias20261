@@ -226,7 +226,7 @@ class DepositoSerializer(serializers.ModelSerializer):
         tipo = validated_data.get('tipo_operacion', Deposito.TipoOperacion.DEPOSITO)
 
         with transaction.atomic():
-            # Re-leer la cuenta con bloqueo para evitar condiciones de carrera
+            
             cuenta = CuentaBancaria.objects.select_for_update().get(pk=cuenta.pk)
 
             if tipo == Deposito.TipoOperacion.DEPOSITO:
@@ -272,14 +272,7 @@ class DepositoListaSerializer(serializers.ModelSerializer):
 
 
 class TransferenciaSerializer(serializers.Serializer):
-    """
-    Serializer para ejecutar una transferencia entre dos cuentas bancarias.
-
-    Implementa:
-    - Validación de saldo suficiente en cuenta origen
-    - Actualización atómica de ambas cuentas (con select_for_update ordenado por PK)
-    - Registro de movimientos (Deposito) en ambas cuentas al completarse la transferencia
-    """
+  
 
     cuenta_origen = serializers.PrimaryKeyRelatedField(
         queryset=CuentaBancaria.objects.all(),
@@ -353,7 +346,7 @@ class TransferenciaSerializer(serializers.Serializer):
         descripcion = validated_data.get('descripcion', '')
 
         with transaction.atomic():
-            # ── Bloqueo ordenado por PK para prevenir deadlocks ──
+            
             pks = sorted([cuenta_origen_obj.pk, cuenta_destino_obj.pk])
             cuentas_bloqueadas = {
                 c.pk: c
@@ -362,19 +355,19 @@ class TransferenciaSerializer(serializers.Serializer):
             origen = cuentas_bloqueadas[cuenta_origen_obj.pk]
             destino = cuentas_bloqueadas[cuenta_destino_obj.pk]
 
-            # ── Re-validación dentro del bloqueo (condición de carrera) ──
+            
             if origen.saldo < monto:
                 raise serializers.ValidationError(
                     {'monto': f'Fondos insuficientes. Saldo actual: {origen.saldo}'}
                 )
 
-            # ── Actualización atómica de saldos ──
+           
             origen.saldo -= monto
             destino.saldo += monto
             origen.save(update_fields=['saldo'])
             destino.save(update_fields=['saldo'])
 
-            # ── Registro de movimientos en ambas cuentas ──
+            
             concepto_origen = (
                 f'Transferencia enviada a cuenta {destino.numero_cuenta}'
             )
@@ -403,7 +396,7 @@ class TransferenciaSerializer(serializers.Serializer):
                 descripcion=concepto_destino,
             )
 
-            # ── Registro de la transferencia ──
+           
             transferencia = Transferencia.objects.create(
                 cuenta_origen=origen,
                 cuenta_destino=destino,
