@@ -96,26 +96,20 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
 class CuentaBancariaViewSet(viewsets.ModelViewSet):
     """
-    Admin: CRUD completo de cuentas bancarias.
-    Cliente: puede crear cuentas propias + lectura de sus cuentas.
+    Admin: CRUD completo de cuentas bancarias (todas las cuentas).
+    Cliente: solo lectura y extracto de sus propias cuentas.
     """
 
     queryset = CuentaBancaria.objects.select_related('cliente')
 
     def get_permissions(self):
-        if self.action in ('list', 'retrieve', 'resumen', 'extracto', 'create'):
+        if self.action in ('list', 'retrieve', 'resumen', 'extracto'):
             return [EsAdminODueñoDeCuenta()]
         if self.action == 'cambiar_estado':
             return [EsAdministradorBancario()]
         return [EsAdministradorBancario()]
 
     def get_serializer_class(self):
-        from .serializers import CuentaClienteCrearSerializer
-
-        if self.action == 'create':
-            if not es_administrador_bancario(self.request.user):
-                # Cliente crea su propia cuenta (auto-asigna cliente, fecha, saldo)
-                return CuentaClienteCrearSerializer
         return CuentaBancariaSerializer
 
     def get_queryset(self):

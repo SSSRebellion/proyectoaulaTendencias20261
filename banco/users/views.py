@@ -1,10 +1,16 @@
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers import CrearUsuarioConRolSerializer, RegistroClienteSerializer
+from banking.models import Cliente
+
+from .serializers import (
+    BancoTokenObtainPairSerializer,
+    CrearUsuarioConRolSerializer,
+    RegistroClienteSerializer,
+)
 
 
 class RegistroClienteView(APIView):
@@ -26,9 +32,32 @@ class RegistroClienteView(APIView):
 
 
 class TokenObtainPairViewSinMensajeExtra(TokenObtainPairView):
-    """Misma vista que SimpleJWT; expuesta bajo nombre del proyecto."""
+    serializer_class = BancoTokenObtainPairSerializer
 
-    pass
+
+class UsuarioActualView(APIView):
+    """Perfil y rol del usuario autenticado."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            'es_administrador': user.is_staff or user.is_superuser,
+        }
+        try:
+            cliente = user.cliente
+        except Cliente.DoesNotExist:
+            cliente = None
+        if cliente:
+            data['cliente_id'] = cliente.id
+            data['nombre_completo'] = cliente.nombre_completo
+        return Response(data)
 
 
 class CrearUsuarioConRolView(APIView):

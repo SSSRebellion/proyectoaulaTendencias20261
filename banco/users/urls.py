@@ -5,11 +5,13 @@ from .views import (
     CrearUsuarioConRolView,
     RegistroClienteView,
     TokenObtainPairViewSinMensajeExtra,
+    UsuarioActualView,
 )
 
 urlpatterns = [
     path('usuarios/', CrearUsuarioConRolView.as_view(), name='auth-crear-usuario-rol'),
     path('registro/', RegistroClienteView.as_view(), name='auth-registro'),
+    path('me/', UsuarioActualView.as_view(), name='auth-me'),
     path('token/', TokenObtainPairViewSinMensajeExtra.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

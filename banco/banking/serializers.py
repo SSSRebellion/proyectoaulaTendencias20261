@@ -8,6 +8,16 @@ from .models import Cliente, CuentaBancaria, Deposito, ProductoFinanciero, Trans
 from .validators import validar_cuenta_operable
 
 
+def _cuentas_activas_queryset(request):
+    qs = CuentaBancaria.objects.filter(estado=CuentaBancaria.Estado.ACTIVA)
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated and not (
+        user.is_staff or user.is_superuser
+    ):
+        qs = qs.filter(cliente__user=user)
+    return qs
+
+
 class ClienteListaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
@@ -97,11 +107,14 @@ class ClienteAutoedicionSerializer(serializers.ModelSerializer):
 
 
 class CuentaBancariaSerializer(serializers.ModelSerializer):
+    cliente_nombre = serializers.CharField(source='cliente.nombre_completo', read_only=True)
+
     class Meta:
         model = CuentaBancaria
         fields = (
             'id',
             'cliente',
+            'cliente_nombre',
             'tipo',
             'numero_cuenta',
             'saldo',
@@ -186,6 +199,12 @@ class DepositoSerializer(serializers.ModelSerializer):
             'creado_en',
         )
         read_only_fields = ('id', 'fecha', 'saldo_resultante', 'creado_en')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        if request:
+            self.fields['cuenta'].queryset = _cuentas_activas_queryset(request)
 
     def validate(self, attrs):
         cuenta = attrs['cuenta']
@@ -283,6 +302,18 @@ class TransferenciaSerializer(serializers.Serializer):
         help_text='Concepto o descripción de la transferencia.',
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        if not request:
+            return
+        user = request.user
+        if user.is_authenticated and not (user.is_staff or user.is_superuser):
+            self.fields['cuenta_origen'].queryset = _cuentas_activas_queryset(request)
+            self.fields['cuenta_destino'].queryset = CuentaBancaria.objects.filter(
+                estado=CuentaBancaria.Estado.ACTIVA,
+            )
+
     def validate(self, attrs):
         origen = attrs['cuenta_origen']
         destino = attrs['cuenta_destino']
@@ -303,6 +334,15 @@ class TransferenciaSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {'monto': f'Fondos insuficientes en la cuenta origen. Saldo actual: {origen.saldo}'}
             )
+
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            user = request.user
+            if not (user.is_staff or user.is_superuser):
+                if origen.cliente.user_id != user.id:
+                    raise serializers.ValidationError(
+                        {'cuenta_origen': 'Solo puede transferir desde sus propias cuentas.'}
+                    )
 
         return attrs
 

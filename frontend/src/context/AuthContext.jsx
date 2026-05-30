@@ -18,14 +18,13 @@ export function AuthProvider({ children }) {
       return {
         userId: decoded.user_id,
         username: decoded.username || '',
-        isStaff: decoded.is_staff || false,
+        isStaff: Boolean(decoded.is_staff || decoded.is_superuser),
       };
     } catch {
       return null;
     }
   }, []);
 
-  // Cargar usuario inicial desde el token almacenado
   const loadUser = useCallback(async () => {
     const { access } = getTokens();
     if (!access) {
@@ -34,7 +33,6 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Parse token básico
     const tokenUser = parseToken(access);
     if (!tokenUser) {
       clearTokens();
@@ -43,19 +41,29 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Intentar obtener info adicional del perfil cliente
     try {
-      const clientes = await apiGet('/api/clientes/');
-      const results = clientes.results || clientes;
-      if (Array.isArray(results) && results.length > 0) {
-        tokenUser.clienteId = results[0].id;
-        tokenUser.nombreCompleto = results[0].nombre_completo;
+      const perfil = await apiGet('/api/auth/me/');
+      tokenUser.isStaff = Boolean(perfil.es_administrador || perfil.is_staff);
+      tokenUser.username = perfil.username || tokenUser.username;
+      if (perfil.nombre_completo) {
+        tokenUser.nombreCompleto = perfil.nombre_completo;
+        tokenUser.clienteId = perfil.cliente_id;
       }
     } catch {
-      // Si falla (admin sin cliente, etc) seguimos con info del token
+      if (!tokenUser.isStaff) {
+        try {
+          const clientes = await apiGet('/api/clientes/');
+          const results = clientes.results || clientes;
+          if (Array.isArray(results) && results.length > 0) {
+            tokenUser.clienteId = results[0].id;
+            tokenUser.nombreCompleto = results[0].nombre_completo;
+          }
+        } catch {
+          // Admin sin perfil cliente, etc.
+        }
+      }
     }
 
-    // Guardar en localStorage para persistencia
     localStorage.setItem('user_info', JSON.stringify(tokenUser));
     setUser(tokenUser);
     setLoading(false);

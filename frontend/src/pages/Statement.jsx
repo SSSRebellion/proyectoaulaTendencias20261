@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiGet } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 function defaultRange() {
   const hasta = new Date();
@@ -12,6 +13,7 @@ function defaultRange() {
 }
 
 export default function Statement() {
+  const { isAdmin } = useAuth();
   const [cuentas, setCuentas] = useState([]);
   const [cuentaId, setCuentaId] = useState('');
   const [fechas, setFechas] = useState(defaultRange);
@@ -70,7 +72,9 @@ export default function Statement() {
       <div className="page-header">
         <div>
           <h1>Extracto Bancario</h1>
-          <p className="page-subtitle">Consulte movimientos por rango de fechas</p>
+          <p className="page-subtitle">
+            {isAdmin ? 'Consulta extractos de cualquier cuenta' : 'Consulte movimientos de sus cuentas'}
+          </p>
         </div>
       </div>
 
@@ -86,7 +90,9 @@ export default function Statement() {
                   <select value={cuentaId} onChange={(e) => setCuentaId(e.target.value)} required>
                     {cuentas.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.numero_cuenta} — {c.tipo} (${fmt(c.saldo)})
+                        {c.numero_cuenta} — {c.tipo}
+                        {isAdmin && c.cliente_nombre ? ` (${c.cliente_nombre})` : ''}
+                        {' '}(${fmt(c.saldo)})
                       </option>
                     ))}
                   </select>

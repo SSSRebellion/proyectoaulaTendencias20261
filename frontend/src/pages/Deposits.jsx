@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 
 export default function Deposits() {
+  const { isAdmin } = useAuth();
   const [depositos, setDepositos] = useState([]);
   const [cuentas, setCuentas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,12 @@ export default function Deposits() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Depósitos y Retiros</h1>
+        <div>
+          <h1>{isAdmin ? 'Depósitos y Retiros (todas las cuentas)' : 'Depósitos y Retiros'}</h1>
+          {!isAdmin && (
+            <p className="page-subtitle">Solo puede operar sobre sus propias cuentas activas</p>
+          )}
+        </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
